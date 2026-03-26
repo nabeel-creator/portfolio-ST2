@@ -250,17 +250,144 @@ function Crosshair({ size = 32, color = "#3B1F0F" }) {
     </svg>
   );
 }
+
+function ContactModal({ isOpen, onClose }) {
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [status, setStatus] = useState('idle');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus('loading');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        setStatus('success');
+        setFormData({ name: '', email: '', message: '' });
+        setTimeout(() => {
+          setStatus('idle');
+          onClose();
+        }, 3000);
+      } else {
+        setStatus('error');
+      }
+    } catch (err) {
+      setStatus('error');
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 z-[100] bg-[#1C140E]/40 backdrop-blur-sm"
+        />
+      )}
+      {isOpen && (
+        <motion.div
+          key="modal"
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-[90%] max-w-lg p-6 md:p-8 bg-[#F5EFE4] rounded-3xl shadow-2xl overflow-hidden"
+        >
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-3xl font-extrabold tracking-tight text-[#1C140E]">let's chat.</h3>
+            <button 
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-[#1C140E]/5 flex items-center justify-center hover:bg-[#1C140E]/10 transition-colors"
+            >
+              <Crosshair size={20} />
+            </button>
+          </div>
+
+          {status === 'success' ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="text-center py-10"
+            >
+              <div className="w-16 h-16 rounded-full bg-[#3B1F0F] text-[#F5EFE4] flex items-center justify-center mx-auto mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <h4 className="text-xl font-bold text-[#1C140E] mb-2">Message Sent!</h4>
+              <p className="text-[#1C140E]/60 text-sm">I'll get back to you as soon as possible.</p>
+            </motion.div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <div>
+                <label className="block text-[0.65rem] font-bold tracking-widest uppercase text-[#3B1F0F]/50 mb-2">Name</label>
+                <input
+                  required
+                  type="text"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full bg-white/50 border border-[#3B1F0F]/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#3B1F0F]/30 focus:bg-white transition-colors"
+                  placeholder="Nabeel"
+                />
+              </div>
+              <div>
+                <label className="block text-[0.65rem] font-bold tracking-widest uppercase text-[#3B1F0F]/50 mb-2">Email</label>
+                <input
+                  required
+                  type="email"
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full bg-white/50 border border-[#3B1F0F]/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#3B1F0F]/30 focus:bg-white transition-colors"
+                  placeholder="hello@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-[0.65rem] font-bold tracking-widest uppercase text-[#3B1F0F]/50 mb-2">Message</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={formData.message}
+                  onChange={e => setFormData({ ...formData, message: e.target.value })}
+                  className="w-full bg-white/50 border border-[#3B1F0F]/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#3B1F0F]/30 focus:bg-white transition-colors resize-none"
+                  placeholder="Tell me about your project..."
+                />
+              </div>
+              {status === 'error' && (
+                <p className="text-red-500 text-xs font-semibold text-center mt-[-10px]">Failed to send message. Please try again.</p>
+              )}
+              <button
+                disabled={status === 'loading'}
+                type="submit"
+                className="mt-2 w-full bg-[#3B1F0F] text-[#F5EFE4] font-bold tracking-[0.1em] uppercase text-xs py-4 rounded-xl hover:bg-[#1C140E] transition-colors disabled:opacity-70 flex justify-center items-center"
+              >
+                {status === 'loading' ? (
+                   <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                ) : 'Send Message'}
+              </button>
+            </form>
+          )}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 export default function NabeelPortfolio() {
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: containerRef });
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -80]);
   const [hovered, setHovered] = useState(null);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   return (
     <div
       ref={containerRef}
       style={{ fontFamily: "'Syne', 'Helvetica Neue', Arial, sans-serif" }}
       className="min-h-screen bg-[#F5EFE4] text-[#1C140E] overflow-x-hidden"
     >
+      <ContactModal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap');
         * { box-sizing: border-box; }
@@ -286,12 +413,12 @@ export default function NabeelPortfolio() {
             </a>
           ))}
         </div>
-        <a
-          href="mailto:mun73350@gmail.com"
+        <button
+          onClick={() => setIsContactModalOpen(true)}
           className="text-[0.62rem] font-bold tracking-[0.12em] uppercase bg-[#3B1F0F] text-[#F5EFE4] px-4 py-2 rounded-full hover:bg-[#5C2F14] transition-colors duration-200"
         >
           Hire Me
-        </a>
+        </button>
       </motion.nav>
       <section id="about" className="relative px-6 md:px-12 pt-14 pb-4 overflow-hidden">
         <div className="flex flex-col lg:flex-row items-start lg:items-end gap-8 lg:gap-12">
@@ -567,14 +694,14 @@ export default function NabeelPortfolio() {
           </div>
         </FadeUp>
         <FadeUp delay={0.15}>
-          <motion.a
-            href="mailto:mun73350@gmail.com"
+          <motion.button
+            onClick={() => setIsContactModalOpen(true)}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             className="inline-block bg-[#3B1F0F] text-[#F5EFE4] text-[0.72rem] font-bold tracking-[0.14em] uppercase px-8 py-4 rounded-full hover:bg-[#5C2F14] transition-colors duration-200"
           >
             Start a Project
-          </motion.a>
+          </motion.button>
         </FadeUp>
       </section>
       <footer className="px-6 md:px-12 py-6 border-t border-[#3B1F0F]/12 flex flex-col md:flex-row justify-between items-center gap-3">
